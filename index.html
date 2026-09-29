@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Versenynaptár</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: filter bar on top, month grid left, upcoming list + detail rail right; stacks on phone */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --line:#dde1e8; --fg:#18202c; --muted:#5d6878;
+  --accent:#2b4fd8; --accent-soft:#e5ebff;
+  --hazai:#1f7a5a; --hazai-soft:#dff3ea;
+  --nemz:#b04a1c; --nemz-soft:#fbe7dc;
+  --mix:#6b43b8; --mix-soft:#ece4fb;
+  --warn:#c0262d; --today:#fff4c7;
+  --f-display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10141b; --surface:#171d27; --line:#2a3342; --fg:#e7ebf2; --muted:#98a3b5;
+  --accent:#7e9bff; --accent-soft:#1f2a4d;
+  --hazai:#5fd0a4; --hazai-soft:#16362b; --nemz:#f39a6c; --nemz-soft:#3d2418; --mix:#b99bf5; --mix-soft:#2c2245;
+  --warn:#ff7076; --today:#3a3418; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141b; --surface:#171d27; --line:#2a3342; --fg:#e7ebf2; --muted:#98a3b5;
+  --accent:#7e9bff; --accent-soft:#1f2a4d;
+  --hazai:#5fd0a4; --hazai-soft:#16362b; --nemz:#f39a6c; --nemz-soft:#3d2418; --mix:#b99bf5; --mix-soft:#2c2245;
+  --warn:#ff7076; --today:#3a3418; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:20px 40px;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,4vw,34px);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.filters label{display:grid;gap:4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+select,input[type=search]{font:inherit;font-size:14px;text-transform:none;letter-spacing:0;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
+.checks{display:flex;flex-direction:column;gap:6px}
+.checks label{display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg);font-weight:400;cursor:pointer}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 11px}
+button:hover{border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.reset{font-size:13px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.calhead h2{font-family:var(--f-display);font-size:22px;margin:0;font-weight:600}
+.nav{display:flex;gap:6px}
+.months{display:flex;gap:4px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.months button{font-size:12px;padding:4px 9px;white-space:nowrap;position:relative}
+.months button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.months button .cnt{font-family:var(--f-mono);font-size:10px;opacity:.75;margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600}
+.day{min-height:104px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.day:nth-child(7n){border-right:0}
+.day.out{background:var(--bg);opacity:.55}
+.day.today{background:var(--today)}
+.dn{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:0 3px}
+.today .dn{color:var(--fg);font-weight:600}
+.ev{display:block;width:100%;text-align:left;font-size:11.5px;line-height:1.25;padding:3px 5px;border-radius:4px;border:0;border-left:3px solid;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.Hazai{background:var(--hazai-soft);border-color:var(--hazai)}
+.ev.Nemzetközi{background:var(--nemz-soft);border-color:var(--nemz)}
+.ev.Mix{background:var(--mix-soft);border-color:var(--mix)}
+.ev.span{background:transparent;border:1px dashed var(--line);border-left:3px dashed;color:var(--muted)}
+.ev.span.Hazai{border-left-color:var(--hazai)}.ev.span.Nemzetközi{border-left-color:var(--nemz)}.ev.span.Mix{border-left-color:var(--mix)}
+.ev.past{opacity:.45;text-decoration:line-through}
+.ev.sel{outline:2px solid var(--accent)}
+.more{font-size:11px;color:var(--accent);background:none;border:0;padding:0 4px;text-align:left}
+@media (max-width:640px){.day{min-height:62px;padding:2px}.ev{font-size:0;padding:0;height:7px;border-left-width:0;border-radius:3px}.ev.Hazai{background:var(--hazai)}.ev.Nemzetközi{background:var(--nemz)}.ev.Mix{background:var(--mix)}.ev.span{height:5px;border:1px dashed}.more{font-size:10px}.dow{padding:6px 3px;font-size:10px}}
+aside{display:grid;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.panel h3{font-family:var(--f-display);font-size:17px;margin:0 0 10px;font-weight:600}
+.up{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:420px;overflow:auto}
+.up li button{width:100%;display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;border:0;background:none;padding:6px 4px;border-radius:6px}
+.up li button:hover{background:var(--bg)}
+.up .dt{white-space:nowrap;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.up .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:99px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.pill.soon{background:var(--warn);color:#fff}
+.pill.past{text-decoration:line-through}
+.empty{color:var(--muted);font-size:13px;margin:0}
+.det h4{font-family:var(--f-display);font-size:20px;margin:0 0 4px;line-height:1.2;text-wrap:balance}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.tag{font-size:11.5px;padding:2px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--line)}
+.tag.Hazai{background:var(--hazai-soft);border-color:transparent;color:var(--hazai)}
+.tag.Nemzetközi{background:var(--nemz-soft);border-color:transparent;color:var(--nemz)}
+.tag.Mix{background:var(--mix-soft);border-color:transparent;color:var(--mix)}
+dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:10px 0;font-size:13px}
+dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.det p{margin:8px 0;font-size:13.5px}
+.det a{color:var(--accent);font-weight:500;overflow-wrap:anywhere}
+.meter{display:inline-flex;gap:2px;vertical-align:middle}.meter i{width:8px;height:8px;border-radius:2px;background:var(--line)}.meter i.f{background:var(--fg)}
+.note{font-size:12px;color:var(--muted);margin:0}
+.nodate{display:flex;flex-wrap:wrap;gap:6px}
+.nodate button{font-size:12px}
+@media (prefers-reduced-motion:no-preference){.ev,.up li button{transition:background .12s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Versenynaptár</h1>
+      <p class="sub">EVK case competition lista, 2026/27. Csak a határidők hónapja és napja számít, idei évre vetítve.</p>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--hazai)"></i>Hazai</span>
+      <span><i class="sw" style="background:var(--nemz)"></i>Nemzetközi</span>
+      <span><i class="sw" style="background:var(--mix)"></i>Mix</span>
+      <span><i class="sw" style="border:1px dashed var(--muted)"></i>Verseny napja</span>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="Szűrők">
+    <label for="q">Keresés<input type="search" id="q" placeholder="Név vagy leírás…"></label>
+    <label for="fPer">Időszak<select id="fPer"><option value="fall">Őszi szemeszter (szept–dec)</option><option value="spring">Tavaszi szemeszter (jan–jún)</option><option value="all">Egész év</option></select></label>
+    <label for="fC">Ország<select id="fC"></select></label>
+    <label for="fT">Típus<select id="fT"></select></label>
+    <label for="fA">Terület<select id="fA"></select></label>
+    <label for="fP">Platform<select id="fP"></select></label>
+    <label for="fI">Egyéni / csapat<select id="fI"><option value="">Mind</option><option value="Igen">Egyéni</option><option value="Nem">Csapat</option></select></label>
+    <label for="fD">Max. nehézség<select id="fD"><option value="">Mind</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+    <div class="checks">
+      <label><input type="checkbox" id="cPast"> Lejártak elrejtése</label>
+      <label><input type="checkbox" id="cSpan"> Verseny napjai is</label>
+      <label><input type="checkbox" id="cEvk"> Csak EVK-s precedens</label>
+    </div>
+    <button class="reset" id="reset" type="button">Szűrők törlése</button>
+  </section>
+
+  <div class="main">
+    <section class="cal" aria-label="Naptár">
+      <div class="calhead">
+        <h2 id="mTitle"></h2>
+        <div class="nav"><button id="prev" type="button" aria-label="Előző hónap">←</button><button id="tod" type="button">Ma</button><button id="next" type="button" aria-label="Következő hónap">→</button></div>
+      </div>
+      <div class="months" id="months"></div>
+      <div class="grid" id="grid"></div>
+    </section>
+    <aside>
+      <div class="panel det" id="det"></div>
+      <div class="panel">
+        <h3 id="upTitle">Határidők</h3>
+        <ul class="up" id="up"></ul>
+      </div>
+      <div class="panel">
+        <h3>Nincs határidő megadva</h3>
+        <div class="nodate" id="nod"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+// --- CSV loading: edit casecomp.csv and push, the page picks it up ---
+function parseCSV(t){const rows=[];let r=[],f='',q=false;t=t.replace(/^\uFEFF/,'');
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else if(c==='"')q=true; else if(c===','){r.push(f);f='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;r.push(f);rows.push(r);r=[];f='';}
+    else f+=c;}
+  if(f!==''||r.length){r.push(f);rows.push(r);}
+  const h=rows.shift().map(x=>x.trim());return rows.filter(r=>r.some(v=>v.trim())).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').trim()])));}
+const FIX={'Startégia':'Stratégia','Pénzügyi tanácsadás (M&A':'M&A','Válallatértékelés':'Vállalatértékelés','Finance':'Pénzügy','Pitch':'Startup/pitch'};
+const md=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?[+m[2],+m[3]]:null};
+const na=v=>['n/a','nincs',''].includes((v||'').toLowerCase())?'':v;
+function toItem(r){return {n:r['Név'],t:r['Típus'],c:r['Ország'],s:r['Évszak'],m:r['Hónap'],dl:md(r['Jelentkezési határidő']),st:md(r['Verseny kezdete']),en:md(r['Verseny vége']),
+  pz:na(r['Pénznyeremény']),op:na(r['Egyéb nyeremény']),fee:r['Jelentkezési díj/fő'],fund:r['Funding availability'],
+  ar:[...new Set((r['Terület']||'').split(',').map(a=>a.trim()).filter(Boolean).map(a=>(FIX[a]||a).replace(/\)$/,'')))].sort(),
+  pl:r['Platform'],ind:r['Egyéni'],mn:r['Min Létszám'],mx:r['Max Létszám'],dif:r['Nehézség'],tim:r['Időigény'],rd:r['Körök száma'],pr:r['EVK-s precedens'],
+  prd:na(r['EVK-s precedens leírás']),prn:na(r['EVK-s precedens név']),rt:r['Random csapatok'],d:r['Leírás']||'',y:r['Benchmark év'],w:(r['Weboldal']||'').split('?utm')[0]};}
+fetch('casecomp.csv',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.text();})
+ .then(t=>main(parseCSV(t).map(toItem)))
+ .catch(e=>{document.getElementById('grid').innerHTML='<p style="padding:16px">Nem sikerült betölteni a casecomp.csv fájlt ('+e.message+'). Helyi megnyitásnál indíts egy szervert: python3 -m http.server</p>';});
+function main(DATA){
+
+
+const MN=['január','február','március','április','május','június','július','augusztus','szeptember','október','november','december'];
+const MS=['jan','feb','márc','ápr','máj','jún','júl','aug','szept','okt','nov','dec'];
+const DOW=['H','K','Sze','Cs','P','Szo','V'];
+const T0=new Date();T0.setHours(0,0,0,0);
+// Academic year: Aug–Dec → start year, Jan–Jul → next year
+const AY=(T0.getMonth()>=7)?T0.getFullYear():T0.getFullYear()-1;
+const toD=md=>md?new Date(md[0]>=8?AY:AY+1,md[0]-1,md[1]):null;
+DATA.forEach((x,i)=>{x.id=i;x.D=toD(x.dl);x.S=toD(x.st);x.E=toD(x.en);if(x.S&&x.E&&x.E<x.S)x.E=null;});
+const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+const days=d=>Math.round((d-T0)/864e5);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function fillSel(id,vals,all='Mind'){$(id).innerHTML='<option value="">'+all+'</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');}
+const uniq=a=>[...new Set(a)].filter(Boolean).sort((a,b)=>a.localeCompare(b,'hu'));
+fillSel('fC',uniq(DATA.map(x=>x.c)));
+fillSel('fT',uniq(DATA.map(x=>x.t)));
+fillSel('fA',uniq(DATA.flatMap(x=>x.ar)));
+fillSel('fP',uniq(DATA.map(x=>x.pl)));
+
+const F=['q','fPer','fC','fT','fA','fP','fI','fD','cPast','cSpan','cEvk'];
+let view=new Date(T0.getFullYear(),T0.getMonth(),1), sel=null; const open=new Set();
+try{const s=JSON.parse(localStorage.getItem('vn-f')||'null');if(s)F.forEach(k=>{if(k in s){const el=$(k);el.type==='checkbox'?el.checked=s[k]:el.value=s[k];}});}catch(e){}
+function save(){try{const s={};F.forEach(k=>{const el=$(k);s[k]=el.type==='checkbox'?el.checked:el.value});localStorage.setItem('vn-f',JSON.stringify(s));}catch(e){}}
+
+function inPeriod(x){const p=$('fPer').value;if(p==='all')return true;
+  const m=x.dl?x.dl[0]:null; if(!m)return p==='fall'?x.s==='Ősz':x.s==='Tavasz';
+  return p==='fall'?(m>=9&&m<=12):(m>=1&&m<=6);}
+function pass(x,ignorePeriod){
+  const q=$('q').value.trim().toLowerCase();
+  if(q&&!(x.n+' '+x.d+' '+x.c).toLowerCase().includes(q))return false;
+  if(!ignorePeriod&&!inPeriod(x))return false;
+  if($('fC').value&&x.c!==$('fC').value)return false;
+  if($('fT').value&&x.t!==$('fT').value)return false;
+  if($('fA').value&&!x.ar.includes($('fA').value))return false;
+  if($('fP').value&&x.pl!==$('fP').value)return false;
+  if($('fI').value&&x.ind!==$('fI').value)return false;
+  if($('fD').value&&!(+x.dif<=+$('fD').value))return false;
+  if($('cEvk').checked&&x.pr!=='Van')return false;
+  if($('cPast').checked&&x.D&&x.D<T0)return false;
+  return true;}
+
+function render(){
+  save();
+  const L=DATA.filter(x=>pass(x));
+  const Lcal=DATA.filter(x=>pass(x,true)); // calendar shows all months; period filter drives list
+  const ev={};const add=(d,o)=>{if(!d)return;(ev[key(d)]=ev[key(d)]||[]).push(o)};
+  Lcal.forEach(x=>{add(x.D,{x,k:'dl'});if($('cSpan').checked){add(x.S,{x,k:'st'});if(x.E&&(!x.S||key(x.E)!==key(x.S)))add(x.E,{x,k:'en'});}});
+  // month strip
+  const ms=[];for(let i=0;i<12;i++){const d=new Date(AY,7+i,1);const n=Lcal.filter(x=>x.D&&x.D.getMonth()===d.getMonth()&&x.D.getFullYear()===d.getFullYear()).length;
+    ms.push(`<button type="button" data-y="${d.getFullYear()}" data-m="${d.getMonth()}" class="${d.getFullYear()===view.getFullYear()&&d.getMonth()===view.getMonth()?'on':''}">${MS[d.getMonth()]}<span class="cnt">${n}</span></button>`);}
+  $('months').innerHTML=ms.join('');
+  $('mTitle').textContent=view.getFullYear()+'. '+MN[view.getMonth()];
+  // grid
+  let h=DOW.map(d=>`<div class="dow">${d}</div>`).join('');
+  const first=new Date(view);const off=(first.getDay()+6)%7;const start=new Date(first);start.setDate(1-off);
+  const weeks=Math.ceil((off+new Date(view.getFullYear(),view.getMonth()+1,0).getDate())/7);
+  for(let i=0;i<weeks*7;i++){const d=new Date(start);d.setDate(start.getDate()+i);
+    const list=(ev[key(d)]||[]).sort((a,b)=>(a.k!=='dl')-(b.k!=='dl'));const lim=open.has(key(d))?99:4;
+    const cls=['day'];if(d.getMonth()!==view.getMonth())cls.push('out');if(+d===+T0)cls.push('today');
+    h+=`<div class="${cls.join(' ')}"><span class="dn">${d.getDate()}</span>`+
+      list.slice(0,lim).map(o=>{const x=o.x;const c=['ev',x.t];if(o.k!=='dl')c.push('span');if(o.k==='dl'&&x.D<T0)c.push('past');if(sel===x.id)c.push('sel');
+        const lab=(o.k==='st'?'▶ ':o.k==='en'?'■ ':'')+x.n;
+        return `<button type="button" class="${c.join(' ')}" data-id="${x.id}" title="${esc((o.k==='dl'?'Határidő: ':o.k==='st'?'Kezdés: ':'Vége: ')+x.n)}">${esc(lab)}</button>`}).join('')+
+      (list.length>lim?`<button type="button" class="more" data-day="${key(d)}">+${list.length-lim} további</button>`:'')+`</div>`;}
+  $('grid').innerHTML=h;
+  // upcoming list
+  const per={fall:'Őszi határidők',spring:'Tavaszi határidők',all:'Összes határidő'}[$('fPer').value];
+  const dated=L.filter(x=>x.D).sort((a,b)=>a.D-b.D);
+  $('upTitle').textContent=per+' ('+dated.length+')';
+  $('up').innerHTML=dated.length?dated.map(x=>{const n=days(x.D);const p=n<0?`<span class="pill past">lejárt</span>`:n===0?`<span class="pill soon">ma</span>`:`<span class="pill ${n<=14?'soon':''}">${n} nap</span>`;
+    return `<li><button type="button" data-id="${x.id}"><span class="dt">${MS[x.D.getMonth()]} ${x.D.getDate()}.</span><span class="nm">${esc(x.n)}</span>${p}</button></li>`}).join(''):'<p class="empty">Nincs a szűrőknek megfelelő verseny.</p>';
+  const nd=L.filter(x=>!x.D);
+  $('nod').innerHTML=nd.length?nd.map(x=>`<button type="button" data-id="${x.id}">${esc(x.n)}</button>`).join(''):'<p class="empty">Nincs ilyen a szűrt listában.</p>';
+  renderDet();
+}
+const meter=v=>{const n=+v;if(!n)return esc(v||'–');return `<span class="meter" aria-label="${n}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'f':''}"></i>`).join('')}</span> ${n}/5`};
+const fmt=d=>d?`${d.getFullYear()}. ${MN[d.getMonth()]} ${d.getDate()}.`:'n/a';
+function renderDet(){
+  const x=DATA[sel];
+  if(x==null){$('det').innerHTML='<h3>Részletek</h3><p class="note">Kattints egy versenyre a naptárban vagy a listában.</p>';return;}
+  const n=x.D?days(x.D):null;
+  $('det').innerHTML=`<h4>${esc(x.n)}</h4>
+  <div class="tags"><span class="tag ${x.t}">${esc(x.t)}</span><span class="tag">${esc(x.c)}</span>${x.ar.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}</div>
+  <dl>
+    <dt>Határidő</dt><dd>${fmt(x.D)}${n!=null?(n<0?' · lejárt':' · '+n+' nap múlva'):''}</dd>
+    <dt>Verseny</dt><dd>${x.S?MS[x.S.getMonth()]+' '+x.S.getDate()+'.':'?'} – ${x.E?MS[x.E.getMonth()]+' '+x.E.getDate()+'.':'?'} <span class="note">(becslés)</span></dd>
+    <dt>Csapat</dt><dd>${x.ind==='Igen'?'Egyéni':(x.mn===x.mx?x.mn:x.mn+'–'+x.mx)+' fő'}${x.rt==='Igen'?' · random csapatok':''}</dd>
+    <dt>Platform</dt><dd>${esc(x.pl)} · ${esc(x.rd||'?')} kör</dd>
+    <dt>Nehézség</dt><dd>${meter(x.dif)}</dd>
+    <dt>Időigény</dt><dd>${meter(x.tim)}</dd>
+    <dt>Nyeremény</dt><dd>${esc([x.pz,x.op].filter(Boolean).join(' · ')||'–')}</dd>
+    <dt>Nevezési díj</dt><dd>${esc(x.fee||'–')}${x.fund==='Igen'?' · van funding':''}</dd>
+    <dt>EVK</dt><dd>${x.pr==='Van'?esc([x.prd,x.prn].filter(Boolean).join(' – ')||'Van precedens'):'Nincs precedens'}</dd>
+  </dl>
+  <p>${esc(x.d)}</p>
+  ${x.w&&x.w.startsWith('http')?`<a href="${esc(x.w)}" target="_blank" rel="noopener">Weboldal megnyitása ↗</a>`:''}
+  <p class="note" style="margin-top:8px">Benchmark év: ${esc(x.y)}. A pontos idei dátumot ellenőrizd a weboldalon.</p>`;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-id]');if(b){sel=+b.dataset.id;const x=DATA[sel];if(x.D&&b.closest('aside'))view=new Date(x.D.getFullYear(),x.D.getMonth(),1);render();if(window.innerWidth<900&&b.closest('.cal'))$('det').scrollIntoView({behavior:'smooth',block:'start'});return;}
+  const m=e.target.closest('[data-m]');if(m){view=new Date(+m.dataset.y,+m.dataset.m,1);render();return;}
+  const mo=e.target.closest('[data-day]');if(mo){open.add(mo.dataset.day);render();}
+});
+$('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render()};
+$('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};
+$('tod').onclick=()=>{view=new Date(T0.getFullYear(),T0.getMonth(),1);render()};
+F.forEach(k=>$(k).addEventListener(k==='q'?'input':'change',render));
+$('reset').onclick=()=>{F.forEach(k=>{const el=$(k);el.type==='checkbox'?el.checked=false:el.value=el.tagName==='SELECT'?el.options[0].value:''});render();};
+render();
+
+}
+</script>
+</body>
+</html>
