@@ -101,6 +101,29 @@ dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums;overflow-wr
 .note{font-size:12px;color:var(--muted);margin:0}
 .nodate{display:flex;flex-wrap:wrap;gap:6px}
 .nodate button{font-size:12px}
+[hidden]{display:none!important}
+.vt{display:flex}.vt button{border-radius:0}.vt button:first-child{border-radius:7px 0 0 7px}.vt button:last-child{border-radius:0 7px 7px 0;margin-left:-1px}
+.vt button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tl{overflow:auto;max-height:78vh;--nw:200px}
+@media (max-width:640px){.tl{--nw:120px}}
+.tlin{min-width:820px;position:relative}
+.tlh{display:grid;grid-template-columns:var(--nw) minmax(0,1fr);position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.tlh .corner{position:sticky;left:0;z-index:6;background:var(--surface);border-right:1px solid var(--line)}
+.tlh .ms{position:relative;height:30px}
+.tlh .ms span{position:absolute;top:8px;padding-left:5px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.tll{position:absolute;top:0;bottom:0;left:var(--nw);right:0;pointer-events:none;z-index:1}
+.tll .ml{position:absolute;top:0;bottom:0;border-left:1px solid var(--line)}
+.tll .tdy{position:absolute;top:0;bottom:0;border-left:2px solid var(--warn)}
+.tlr{display:grid;grid-template-columns:var(--nw) minmax(0,1fr);width:100%;padding:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;text-align:left}
+.tlr:hover{border-color:var(--line);background:var(--bg)}
+.tlr .nm{position:sticky;left:0;z-index:4;background:var(--surface);padding:6px 8px;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-right:1px solid var(--line)}
+.tlr:hover .nm{background:var(--bg)}
+.tlr.sel .nm{box-shadow:inset 3px 0 var(--accent);font-weight:600}
+.tlr .tr{position:relative;height:30px}
+.bar{position:absolute;top:8px;height:14px;min-width:6px;border-radius:4px;border:1px solid;z-index:2}
+.bar.Hazai{background:var(--hazai-soft);border-color:var(--hazai)}.bar.Nemzetközi{background:var(--nemz-soft);border-color:var(--nemz)}.bar.Mix{background:var(--mix-soft);border-color:var(--mix)}
+.dm{position:absolute;top:10px;width:10px;height:10px;margin-left:-5px;transform:rotate(45deg);border-radius:2px;background:var(--fg);box-shadow:0 0 0 2px var(--surface);z-index:3}
+.dm.Hazai{background:var(--hazai)}.dm.Nemzetközi{background:var(--nemz)}.dm.Mix{background:var(--mix)}.dm.past{opacity:.4}
 @media (prefers-reduced-motion:no-preference){.ev,.up li button{transition:background .12s}}
 </style>
 
@@ -110,13 +133,14 @@ dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums;overflow-wr
   <header>
     <div>
       <h1>Versenynaptár</h1>
-      <p class="sub">EVK case competition lista, 2026/27. Csak a határidők hónapja és napja számít, idei évre vetítve.</p>
+      <p class="sub">EVK case competition lista, 2026/27. A dátumoknak csak a hónapja és napja számít, az idei tanévre vetítve.</p>
     </div>
     <div class="legend">
       <span><i class="sw" style="background:var(--hazai)"></i>Hazai</span>
       <span><i class="sw" style="background:var(--nemz)"></i>Nemzetközi</span>
       <span><i class="sw" style="background:var(--mix)"></i>Mix</span>
-      <span><i class="sw" style="border:1px dashed var(--muted)"></i>Verseny napja</span>
+      <span><i class="sw" style="border:1px dashed var(--muted)"></i>Verseny kezdete ▶ / vége ■</span>
+      <span><i class="sw" style="transform:rotate(45deg) scale(.8);background:var(--muted)"></i>Határidő (idővonal)</span>
     </div>
   </header>
 
@@ -131,7 +155,7 @@ dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums;overflow-wr
     <label for="fD">Max. nehézség<select id="fD"><option value="">Mind</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
     <div class="checks">
       <label><input type="checkbox" id="cPast"> Lejártak elrejtése</label>
-      <label><input type="checkbox" id="cSpan"> Verseny napjai is</label>
+      <label><input type="checkbox" id="cDl"> Csak határidők</label>
       <label><input type="checkbox" id="cEvk"> Csak EVK-s precedens</label>
     </div>
     <button class="reset" id="reset" type="button">Szűrők törlése</button>
@@ -141,10 +165,12 @@ dt{color:var(--muted)} dd{margin:0;font-variant-numeric:tabular-nums;overflow-wr
     <section class="cal" aria-label="Naptár">
       <div class="calhead">
         <h2 id="mTitle"></h2>
-        <div class="nav"><button id="prev" type="button" aria-label="Előző hónap">←</button><button id="tod" type="button">Ma</button><button id="next" type="button" aria-label="Következő hónap">→</button></div>
+        <div class="vt" role="group" aria-label="Nézet"><button type="button" id="vCal">Naptár</button><button type="button" id="vTl">Idővonal</button></div>
+        <div class="nav" id="nav"><button id="prev" type="button" aria-label="Előző hónap">←</button><button id="tod" type="button">Ma</button><button id="next" type="button" aria-label="Következő hónap">→</button></div>
       </div>
       <div class="months" id="months"></div>
       <div class="grid" id="grid"></div>
+      <div class="tl" id="tl" hidden></div>
     </section>
     <aside>
       <div class="panel det" id="det"></div>
@@ -172,8 +198,9 @@ function parseCSV(t){const rows=[];let r=[],f='',q=false;t=t.replace(/^\uFEFF/,'
   const h=rows.shift().map(x=>x.trim());return rows.filter(r=>r.some(v=>v.trim())).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').trim()])));}
 const FIX={'Startégia':'Stratégia','Pénzügyi tanácsadás (M&A':'M&A','Válallatértékelés':'Vállalatértékelés','Finance':'Pénzügy','Pitch':'Startup/pitch'};
 const md=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?[+m[2],+m[3]]:null};
+const rawD=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?new Date(+m[1],m[2]-1,+m[3]):null};
 const na=v=>['n/a','nincs',''].includes((v||'').toLowerCase())?'':v;
-function toItem(r){return {n:r['Név'],t:r['Típus'],c:r['Ország'],s:r['Évszak'],m:r['Hónap'],dl:md(r['Jelentkezési határidő']),st:md(r['Verseny kezdete']),en:md(r['Verseny vége']),
+function toItem(r){return {n:r['Név'],t:r['Típus'],c:r['Ország'],s:r['Évszak'],m:r['Hónap'],dl:md(r['Jelentkezési határidő']),st:md(r['Verseny kezdete']),en:md(r['Verseny vége']),stR:rawD(r['Verseny kezdete']),enR:rawD(r['Verseny vége']),
   pz:na(r['Pénznyeremény']),op:na(r['Egyéb nyeremény']),fee:r['Jelentkezési díj/fő'],fund:r['Funding availability'],
   ar:[...new Set((r['Terület']||'').split(',').map(a=>a.trim()).filter(Boolean).map(a=>(FIX[a]||a).replace(/\)$/,'')))].sort(),
   pl:r['Platform'],ind:r['Egyéni'],mn:r['Min Létszám'],mx:r['Max Létszám'],dif:r['Nehézség'],tim:r['Időigény'],rd:r['Körök száma'],pr:r['EVK-s precedens'],
@@ -191,7 +218,9 @@ const T0=new Date();T0.setHours(0,0,0,0);
 // Academic year: Aug–Dec → start year, Jan–Jul → next year
 const AY=(T0.getMonth()>=7)?T0.getFullYear():T0.getFullYear()-1;
 const toD=md=>md?new Date(md[0]>=8?AY:AY+1,md[0]-1,md[1]):null;
-DATA.forEach((x,i)=>{x.id=i;x.D=toD(x.dl);x.S=toD(x.st);x.E=toD(x.en);if(x.S&&x.E&&x.E<x.S)x.E=null;});
+DATA.forEach((x,i)=>{x.id=i;x.D=toD(x.dl);x.S=toD(x.st);
+  if(x.S&&x.enR){const n=Math.round((x.enR-x.stR)/864e5);x.E=n>=0?new Date(x.S.getFullYear(),x.S.getMonth(),x.S.getDate()+n):null;}
+  else x.E=toD(x.en);});
 const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
 const days=d=>Math.round((d-T0)/864e5);
 const $=id=>document.getElementById(id);
@@ -204,8 +233,9 @@ fillSel('fT',uniq(DATA.map(x=>x.t)));
 fillSel('fA',uniq(DATA.flatMap(x=>x.ar)));
 fillSel('fP',uniq(DATA.map(x=>x.pl)));
 
-const F=['q','fPer','fC','fT','fA','fP','fI','fD','cPast','cSpan','cEvk'];
+const F=['q','fPer','fC','fT','fA','fP','fI','fD','cPast','cDl','cEvk'];
 let view=new Date(T0.getFullYear(),T0.getMonth(),1), sel=null; const open=new Set();
+let mode='cal';try{if(localStorage.getItem('vn-v')==='tl')mode='tl';}catch(e){}
 try{const s=JSON.parse(localStorage.getItem('vn-f')||'null');if(s)F.forEach(k=>{if(k in s){const el=$(k);el.type==='checkbox'?el.checked=s[k]:el.value=s[k];}});}catch(e){}
 function save(){try{const s={};F.forEach(k=>{const el=$(k);s[k]=el.type==='checkbox'?el.checked:el.value});localStorage.setItem('vn-f',JSON.stringify(s));}catch(e){}}
 
@@ -231,12 +261,16 @@ function render(){
   const L=DATA.filter(x=>pass(x));
   const Lcal=DATA.filter(x=>pass(x,true)); // calendar shows all months; period filter drives list
   const ev={};const add=(d,o)=>{if(!d)return;(ev[key(d)]=ev[key(d)]||[]).push(o)};
-  Lcal.forEach(x=>{add(x.D,{x,k:'dl'});if($('cSpan').checked){add(x.S,{x,k:'st'});if(x.E&&(!x.S||key(x.E)!==key(x.S)))add(x.E,{x,k:'en'});}});
+  Lcal.forEach(x=>{add(x.D,{x,k:'dl'});if(!$('cDl').checked){add(x.S,{x,k:'st'});if(x.E&&(!x.S||key(x.E)!==key(x.S)))add(x.E,{x,k:'en'});}});
   // month strip
   const ms=[];for(let i=0;i<12;i++){const d=new Date(AY,7+i,1);const n=Lcal.filter(x=>x.D&&x.D.getMonth()===d.getMonth()&&x.D.getFullYear()===d.getFullYear()).length;
     ms.push(`<button type="button" data-y="${d.getFullYear()}" data-m="${d.getMonth()}" class="${d.getFullYear()===view.getFullYear()&&d.getMonth()===view.getMonth()?'on':''}">${MS[d.getMonth()]}<span class="cnt">${n}</span></button>`);}
   $('months').innerHTML=ms.join('');
-  $('mTitle').textContent=view.getFullYear()+'. '+MN[view.getMonth()];
+  const tl=mode==='tl';
+  $('vCal').className=tl?'':'on';$('vTl').className=tl?'on':'';
+  ['months','grid','nav'].forEach(id=>$(id).hidden=tl);$('tl').hidden=!tl;
+  $('mTitle').textContent=tl?AY+'/'+String(AY+1).slice(2)+' idővonal':view.getFullYear()+'. '+MN[view.getMonth()];
+  if(tl)renderTL(L);
   // grid
   let h=DOW.map(d=>`<div class="dow">${d}</div>`).join('');
   const first=new Date(view);const off=(first.getDay()+6)%7;const start=new Date(first);start.setDate(1-off);
@@ -260,6 +294,25 @@ function render(){
   $('nod').innerHTML=nd.length?nd.map(x=>`<button type="button" data-id="${x.id}">${esc(x.n)}</button>`).join(''):'<p class="empty">Nincs ilyen a szűrt listában.</p>';
   renderDet();
 }
+// Timeline: one row per competition, bar = competition period, diamond = deadline. Axis is the academic year (Aug–Jul).
+const R0=new Date(AY,7,1),R1=new Date(AY+1,7,1);
+const pc=d=>Math.max(0,Math.min(100,(d-R0)/(R1-R0)*100));
+const sd=d=>MS[d.getMonth()]+' '+d.getDate()+'.';
+const rng=x=>(x.S?sd(x.S):'?')+' – '+(x.E?sd(x.E):'?');
+function renderTL(L){
+  const rows=L.filter(x=>x.S||x.E||x.D).sort((a,b)=>(a.S||a.D||a.E)-(b.S||b.D||b.E));
+  if(!rows.length){$('tl').innerHTML='<p class="empty" style="padding:16px">Nincs a szűrőknek megfelelő verseny.</p>';return;}
+  let ms='',ln='';
+  for(let i=0;i<12;i++){const d=new Date(AY,7+i,1);ms+=`<span style="left:${pc(d)}%">${MS[d.getMonth()]}</span>`;if(i)ln+=`<i class="ml" style="left:${pc(d)}%"></i>`;}
+  if(T0>=R0&&T0<R1)ln+=`<i class="tdy" style="left:${pc(T0)}%"></i>`;
+  $('tl').innerHTML=`<div class="tlin"><div class="tlh"><span class="corner"></span><span class="ms">${ms}</span></div><div class="tll">${ln}</div>`+
+    rows.map(x=>{let g='';
+      if(x.S||x.E){const a=pc(x.S||x.E),b=pc(x.E||x.S);g+=`<span class="bar ${x.t}" style="left:${a}%;width:${b-a}%"></span>`;}
+      if(x.D)g+=`<span class="dm ${x.t}${x.D<T0?' past':''}" style="left:${pc(x.D)}%"></span>`;
+      const tip=x.n+(x.S||x.E?' · verseny: '+rng(x):'')+(x.D?' · határidő: '+sd(x.D):'');
+      return `<button type="button" class="tlr${sel===x.id?' sel':''}" data-id="${x.id}" title="${esc(tip)}"><span class="nm">${esc(x.n)}</span><span class="tr">${g}</span></button>`}).join('')+`</div>`;
+}
+function toToday(){const el=$('tl');const nw=parseFloat(getComputedStyle(el).getPropertyValue('--nw'))||0;const w=el.scrollWidth-nw;el.scrollLeft=Math.max(0,nw+w*pc(T0)/100-nw-60-(el.clientWidth-nw)/3);}
 const meter=v=>{const n=+v;if(!n)return esc(v||'–');return `<span class="meter" aria-label="${n}/5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'f':''}"></i>`).join('')}</span> ${n}/5`};
 const fmt=d=>d?`${d.getFullYear()}. ${MN[d.getMonth()]} ${d.getDate()}.`:'n/a';
 function renderDet(){
@@ -270,7 +323,7 @@ function renderDet(){
   <div class="tags"><span class="tag ${x.t}">${esc(x.t)}</span><span class="tag">${esc(x.c)}</span>${x.ar.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}</div>
   <dl>
     <dt>Határidő</dt><dd>${fmt(x.D)}${n!=null?(n<0?' · lejárt':' · '+n+' nap múlva'):''}</dd>
-    <dt>Verseny</dt><dd>${x.S?MS[x.S.getMonth()]+' '+x.S.getDate()+'.':'?'} – ${x.E?MS[x.E.getMonth()]+' '+x.E.getDate()+'.':'?'} <span class="note">(becslés)</span></dd>
+    <dt>Verseny</dt><dd>${x.S||x.E?rng(x)+(x.S&&x.E?' · '+(Math.round((x.E-x.S)/864e5)+1)+' nap':''):'nincs megadva'} <span class="note">(becslés)</span></dd>
     <dt>Csapat</dt><dd>${x.ind==='Igen'?'Egyéni':(x.mn===x.mx?x.mn:x.mn+'–'+x.mx)+' fő'}${x.rt==='Igen'?' · random csapatok':''}</dd>
     <dt>Platform</dt><dd>${esc(x.pl)} · ${esc(x.rd||'?')} kör</dd>
     <dt>Nehézség</dt><dd>${meter(x.dif)}</dd>
@@ -290,10 +343,13 @@ document.addEventListener('click',e=>{
 });
 $('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render()};
 $('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};
+function setMode(m){mode=m;try{localStorage.setItem('vn-v',m)}catch(e){}render();if(m==='tl')toToday();}
+$('vCal').onclick=()=>setMode('cal');
+$('vTl').onclick=()=>setMode('tl');
 $('tod').onclick=()=>{view=new Date(T0.getFullYear(),T0.getMonth(),1);render()};
 F.forEach(k=>$(k).addEventListener(k==='q'?'input':'change',render));
 $('reset').onclick=()=>{F.forEach(k=>{const el=$(k);el.type==='checkbox'?el.checked=false:el.value=el.tagName==='SELECT'?el.options[0].value:''});render();};
-render();
+render();if(mode==='tl')toToday();
 
 }
 </script>
